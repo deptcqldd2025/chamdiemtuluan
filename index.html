@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chụp bài thi tự luận</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 15px; margin: 0; background: #f4f4f4; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        .control-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        input[type="text"] { flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
+        .btn-capture { background: #007bff; color: white; border: none; padding: 0 20px; font-size: 16px; border-radius: 5px; cursor: pointer;}
+        #cameraInput { display: none; }
+        
+        .thumb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .thumb-item { position: relative; width: 100%; padding-top: 133%; background: #ddd; border-radius: 5px; overflow: hidden; }
+        .thumb-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .btn-remove { position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; font-weight: bold; cursor: pointer; }
+        
+        #btnSavePdf { width: 100%; padding: 15px; background: #28a745; color: white; border: none; font-size: 18px; font-weight: bold; border-radius: 5px; display: none; margin-bottom: 20px;}
+        #btnSavePdf:disabled { background: #888; }
+        
+        .file-list { background: white; padding: 10px; border-radius: 5px; font-size: 14px; }
+        .file-item { border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between; }
+        .file-item a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h2>Chụp bài thi tự luận</h2>
+    
+    <div class="control-row">
+        <input type="text" id="sbdInput" placeholder="Nhập Số báo danh">
+        <button class="btn-capture" onclick="document.getElementById('cameraInput').click()">📷 Chụp</button>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleImage(this)">
+    </div>
+
+    <div class="thumb-grid" id="thumbContainer"></div>
+
+    <button id="btnSavePdf" onclick="generateAndUpload()">LƯU PDF LÊN DRIVE</button>
+    <div id="status" style="text-align: center; font-weight: bold; margin-bottom: 15px;"></div>
+
+    <div class="file-list">
+        <h4>Bài thi đã lưu gần đây</h4>
+        <div id="listContainer">Đang tải...</div>
+    </div>
+
+    <script>
+        const GAS_URL = "YOUR_GAS_WEB_APP_URL";
+        let images = [];
+
+        function handleImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    images.push(e.target.result);
+                    renderThumbs();
+                };
+                reader.readAsDataURL(input.files[0]);
+                input.value = ""; // Reset input
+            }
+        }
+
+        function removeImage(index) {
+            images.splice(index, 1);
+            renderThumbs();
+        }
+
+        function renderThumbs() {
+            const container = document.getElementById('thumbContainer');
+            container.innerHTML = "";
+            images.forEach((src, index) => {
+                container.innerHTML += `
+                    <div class="thumb-item">
+                        <img src="${src}">
+                        <button class="btn-remove" onclick="removeImage(${index})">X</button>
+                    </div>`;
+            });
+            document.getElementById('btnSavePdf').style.display = images.length > 0 ? "block" : "none";
+        }
+
+        async function generateAndUpload() {
+            const sbd = document.getElementById('sbdInput').value.trim();
+            if (!sbd) return alert("Vui lòng nhập SBD.");
+
+            const btn = document.getElementById('btnSavePdf');
+            const statusDiv = document.getElementById('status');
+            btn.disabled = true;
+            statusDiv.innerText = "Đang tạo PDF...";
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            for (let i = 0; i < images.length; i++) {
+                if (i > 0) pdf.addPage();
+                pdf.addImage(images[i], 'JPEG', 0, 0, pageWidth, pageHeight);
+            }
+
+            // Xuất PDF dạng Base64
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+            
+            statusDiv.innerText = "Đang tải lên Drive...";
+            try {
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "upload_pdf", sbd: sbd, pdf_base64: pdfBase64 })
+                });
+                const result = await res.json();
+                if (result.status === "success") {
+                    statusDiv.innerText = "Đã lưu thành công!";
+                    statusDiv.style.color = "green";
+                    images = []; renderThumbs();
+                    document.getElementById('sbdInput').value = "";
+                    loadRecentFiles(); // Cập nhật danh sách
+                } else throw new Error();
+            } catch (e) {
+                statusDiv.innerText = "Lỗi khi lưu!";
+                statusDiv.style.color = "red";
+            }
+            btn.disabled = false;
+        }
+
+        async function loadRecentFiles() {
+            try {
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                let html = "";
+                data.forEach(item => {
+                    html += `<div class="file-item">
+                        <span>SBD: <b>${item.sbd}</b> - Điểm: ${item.diem}</span>
+                        <a href="${item.link}" target="_blank">Xem PDF</a>
+                    </div>`;
+                });
+                document.getElementById('listContainer').innerHTML = html;
+            } catch (e) {
+                document.getElementById('listContainer').innerHTML = "Lỗi kết nối.";
+            }
+        }
+        
+        loadRecentFiles();
+    </script>
+</body>
+</html>
