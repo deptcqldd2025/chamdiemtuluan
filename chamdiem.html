@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chấm Điểm Bài Thi</title>
+    <style>
+        body { font-family: sans-serif; background: #eef2f3; margin: 0; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 100vh; box-sizing: border-box;}
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column;}
+        h3 { margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;}
+        textarea { flex: 1; width: 100%; padding: 10px; font-family: monospace; border: 1px solid #ccc; margin-bottom: 15px; resize: none; box-sizing: border-box;}
+        button { padding: 15px; background: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px;}
+        button:disabled { background: #999; }
+        #preview { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 14px; min-height: 100px;}
+        
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .table-container { overflow-y: auto; flex: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h3>1. Dán JSON từ Gem</h3>
+        <textarea id="jsonInput" placeholder='{\n  "so_bao_danh": "123",\n  "ho_ten": "Nguyễn Văn A",\n  "so_diem": 8,\n  "ket_qua_cham": "Tốt"\n}' oninput="previewData()"></textarea>
+        
+        <div id="preview">Nhập JSON hợp lệ để xem trước...</div>
+        <div id="status" style="margin-bottom: 10px; font-weight: bold; text-align: center;"></div>
+        <button id="btnSave" onclick="saveGrade()" disabled>LƯU KẾT QUẢ VÀO SHEET</button>
+    </div>
+
+    <div class="panel">
+        <h3>2. Kết quả đã chấm (Từ Sheet)</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="80">SBD</th>
+                        <th width="60">Điểm</th>
+                        <th>Bài làm</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="3" style="text-align:center;">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <button onclick="loadSheetData()" style="margin-top: 15px; background: #28a745;">LÀM MỚI DANH SÁCH</button>
+    </div>
+
+    <script>
+        const GAS_URL = "YOUR_GAS_WEB_APP_URL";
+        let parsedJSON = null;
+
+        function previewData() {
+            const val = document.getElementById('jsonInput').value.trim();
+            const preview = document.getElementById('preview');
+            const btn = document.getElementById('btnSave');
+            document.getElementById('status').innerText = "";
+            
+            if (!val) { preview.innerHTML = ""; btn.disabled = true; return; }
+            
+            try {
+                parsedJSON = JSON.parse(val);
+                if (parsedJSON.so_bao_danh && parsedJSON.so_diem !== undefined) {
+                    preview.innerHTML = `<b>SBD:</b> ${parsedJSON.so_bao_danh}<br><b>Họ tên:</b> ${parsedJSON.ho_ten || 'N/A'}<br><b>Điểm:</b> <span style="color:red; font-size:16px;"><b>${parsedJSON.so_diem}</b></span><br><b>Chi tiết:</b> ${parsedJSON.ket_qua_cham}`;
+                    btn.disabled = false;
+                } else throw new Error();
+            } catch (e) {
+                preview.innerHTML = "<span style='color:red;'>Lỗi cú pháp JSON.</span>";
+                btn.disabled = true;
+            }
+        }
+
+        async function saveGrade() {
+            const btn = document.getElementById('btnSave');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            status.innerText = "Đang lưu...";
+
+            try {
+                const payload = { action: "save_grade", ...parsedJSON };
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await res.json();
+                
+                if (result.status === "success") {
+                    status.innerText = "Lưu điểm thành công!";
+                    status.style.color = "green";
+                    document.getElementById('jsonInput').value = "";
+                    document.getElementById('preview').innerHTML = "";
+                    loadSheetData();
+                } else throw new Error();
+            } catch (e) {
+                status.innerText = "Lỗi khi lưu điểm.";
+                status.style.color = "red";
+                btn.disabled = false;
+            }
+        }
+
+        async function loadSheetData() {
+            try {
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                let html = "";
+                data.forEach(item => {
+                    html += `<tr>
+                        <td><b>${item.sbd}</b></td>
+                        <td style="color:red; font-weight:bold;">${item.diem}</td>
+                        <td><a href="${item.link}" target="_blank">Xem PDF</a></td>
+                    </tr>`;
+                });
+                document.getElementById('tableBody').innerHTML = html;
+            } catch (e) {
+                document.getElementById('tableBody').innerHTML = "<tr><td colspan='3'>Lỗi kết nối</td></tr>";
+            }
+        }
+        
+        loadSheetData();
+    </script>
+</body>
+</html>
