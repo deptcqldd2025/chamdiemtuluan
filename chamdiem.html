@@ -3,35 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chấm Điểm Bài Thi</title>
+    <title>Chấm Điểm Bài Thi - VDC Safety</title>
     <style>
         body { font-family: sans-serif; background: #eef2f3; margin: 0; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 100vh; box-sizing: border-box;}
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column;}
         h3 { margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;}
-        textarea { flex: 1; width: 100%; padding: 10px; font-family: monospace; border: 1px solid #ccc; margin-bottom: 15px; resize: none; box-sizing: border-box;}
-        button { padding: 15px; background: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px;}
-        button:disabled { background: #999; }
-        #preview { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 14px; min-height: 100px;}
+        textarea { flex: 1; width: 100%; padding: 10px; font-family: monospace; border: 1px solid #ccc; margin-bottom: 15px; resize: none; box-sizing: border-box; min-height: 150px;}
+        button { padding: 15px; background: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s;}
+        button:disabled { background: #999; cursor: not-allowed;}
+        button:hover:not(:disabled) { background: #0056b3; }
+        
+        #preview { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 14px; min-height: 100px; border-radius: 5px;}
         
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .table-container { overflow-y: auto; flex: 1; }
+        th { background-color: #f2f2f2; position: sticky; top: 0;}
+        .table-container { overflow-y: auto; flex: 1; border: 1px solid #ddd; border-radius: 5px;}
+
+        /* CSS Box tạo lệnh Gem */
+        .prompt-box { background: #e9ecef; padding: 12px; border-radius: 5px; margin-bottom: 20px; border: 1px dashed #adb5bd; }
+        .prompt-box label { font-size: 13px; font-weight: bold; color: #495057; margin-bottom: 8px; display: block; text-transform: uppercase;}
+        .prompt-row { display: flex; gap: 8px; align-items: stretch; }
+        .prompt-row input { width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; text-align: center;}
+        .prompt-row code { flex: 1; background: #fff; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; display: flex; align-items: center; color: #d63384;}
+        .btn-copy { background: #28a745; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px;}
+        .btn-copy:hover { background: #218838; }
     </style>
 </head>
 <body>
 
     <div class="panel">
-        <h3>1. Dán JSON từ Gem</h3>
-        <textarea id="jsonInput" placeholder='{\n  "so_bao_danh": "123",\n  "ho_ten": "Nguyễn Văn A",\n  "so_diem": 8,\n  "ket_qua_cham": "Tốt"\n}' oninput="previewData()"></textarea>
+        <h3>1. Tạo lệnh & Dán JSON từ Gem</h3>
+        
+        <div class="prompt-box">
+            <label>Tạo lệnh gọi file cho Gem</label>
+            <div class="prompt-row">
+                <input type="text" id="sbdPromptInput" placeholder="Nhập SBD..." oninput="updatePrompt()">
+                <code id="promptText">@Google Drive tìm và đọc file ...pdf</code>
+                <button class="btn-copy" id="copyBtn" onclick="copyPrompt()" title="Copy lệnh">📋</button>
+            </div>
+        </div>
+
+        <textarea id="jsonInput" placeholder='{\n  "so_bao_danh": "123",\n  "ket_qua_cham": "...",\n  "so_diem": 8.0\n}' oninput="previewData()"></textarea>
         
         <div id="preview">Nhập JSON hợp lệ để xem trước...</div>
-        <div id="status" style="margin-bottom: 10px; font-weight: bold; text-align: center;"></div>
+        <div id="status" style="margin-bottom: 10px; font-weight: bold; text-align: center; min-height: 20px;"></div>
         <button id="btnSave" onclick="saveGrade()" disabled>LƯU KẾT QUẢ VÀO SHEET</button>
     </div>
 
     <div class="panel">
-        <h3>2. Kết quả đã chấm (Từ Sheet)</h3>
+        <h3>2. Kết quả đã chấm (Từ hệ thống cơ sở dữ liệu)</h3>
         <div class="table-container">
             <table>
                 <thead>
@@ -46,29 +67,72 @@
                 </tbody>
             </table>
         </div>
-        <button onclick="loadSheetData()" style="margin-top: 15px; background: #28a745;">LÀM MỚI DANH SÁCH</button>
+        <button onclick="loadSheetData()" style="margin-top: 15px; background: #17a2b8;">LÀM MỚI DANH SÁCH</button>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz203WVeZtQU5qH1kO2vhZ5uukbWH8QpEPcPqFBOwVTn0Go1mxnfoGzXwXKyrpxBRxvpA/exec";
+        // --- THAY ĐƯỜNG LINK GAS VÀO BIẾN BÊN DƯỚI ---
+        const GAS_URL = "YOUR_GAS_WEB_APP_URL";
         let parsedJSON = null;
 
+        // --- Logic tạo lệnh Prompt ---
+        function updatePrompt() {
+            const sbd = document.getElementById('sbdPromptInput').value.trim();
+            const promptEl = document.getElementById('promptText');
+            if (sbd) {
+                promptEl.innerText = `@Google Drive tìm và đọc file ${sbd}.pdf`;
+                promptEl.style.color = "#000"; // Đổi màu khi có dữ liệu
+            } else {
+                promptEl.innerText = `@Google Drive tìm và đọc file ...pdf`;
+                promptEl.style.color = "#d63384"; 
+            }
+        }
+
+        function copyPrompt() {
+            const textToCopy = document.getElementById('promptText').innerText;
+            if (textToCopy.includes('...')) {
+                alert("Vui lòng nhập SBD trước khi copy lệnh!");
+                return;
+            }
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerText = "✅";
+                btn.style.background = "#20c997";
+                
+                // Trả lại icon cũ sau 1.5 giây
+                setTimeout(() => {
+                    btn.innerText = "📋";
+                    btn.style.background = "#28a745";
+                }, 1500);
+            }).catch(err => {
+                alert("Không thể copy. Vui lòng copy thủ công.");
+            });
+        }
+
+        // --- Logic xử lý dữ liệu JSON ---
         function previewData() {
             const val = document.getElementById('jsonInput').value.trim();
             const preview = document.getElementById('preview');
             const btn = document.getElementById('btnSave');
             document.getElementById('status').innerText = "";
             
-            if (!val) { preview.innerHTML = ""; btn.disabled = true; return; }
+            if (!val) { preview.innerHTML = "Nhập JSON hợp lệ để xem trước..."; btn.disabled = true; return; }
             
             try {
                 parsedJSON = JSON.parse(val);
                 if (parsedJSON.so_bao_danh && parsedJSON.so_diem !== undefined) {
-                    preview.innerHTML = `<b>SBD:</b> ${parsedJSON.so_bao_danh}<br><b>Họ tên:</b> ${parsedJSON.ho_ten || 'N/A'}<br><b>Điểm:</b> <span style="color:red; font-size:16px;"><b>${parsedJSON.so_diem}</b></span><br><b>Chi tiết:</b> ${parsedJSON.ket_qua_cham}`;
+                    preview.innerHTML = `
+                        <b>SBD:</b> ${parsedJSON.so_bao_danh}<br>
+                        <b>Điểm:</b> <span style="color:red; font-size:16px;"><b>${parsedJSON.so_diem}</b></span><br>
+                        <b>Chi tiết:</b> ${parsedJSON.ket_qua_cham}
+                    `;
                     btn.disabled = false;
-                } else throw new Error();
+                } else {
+                    throw new Error();
+                }
             } catch (e) {
-                preview.innerHTML = "<span style='color:red;'>Lỗi cú pháp JSON.</span>";
+                preview.innerHTML = "<span style='color:red;'>Lỗi cú pháp JSON. Vui lòng kiểm tra lại.</span>";
                 btn.disabled = true;
             }
         }
@@ -77,45 +141,62 @@
             const btn = document.getElementById('btnSave');
             const status = document.getElementById('status');
             btn.disabled = true;
-            status.innerText = "Đang lưu...";
+            status.innerText = "Đang đồng bộ dữ liệu...";
+            status.style.color = "blue";
 
             try {
                 const payload = { action: "save_grade", ...parsedJSON };
-                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const res = await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(payload) 
+                });
                 const result = await res.json();
                 
                 if (result.status === "success") {
                     status.innerText = "Lưu điểm thành công!";
                     status.style.color = "green";
+                    
+                    // Reset giao diện
                     document.getElementById('jsonInput').value = "";
-                    document.getElementById('preview').innerHTML = "";
+                    document.getElementById('sbdPromptInput').value = "";
+                    updatePrompt();
+                    document.getElementById('preview').innerHTML = "Nhập JSON hợp lệ để xem trước...";
+                    
+                    // Tải lại bảng bên phải
                     loadSheetData();
-                } else throw new Error();
+                } else {
+                    throw new Error(result.message);
+                }
             } catch (e) {
-                status.innerText = "Lỗi khi lưu điểm.";
+                status.innerText = "LỖI: " + e.message;
                 status.style.color = "red";
                 btn.disabled = false;
             }
         }
 
+        // --- Logic hiển thị danh sách từ Google Sheet ---
         async function loadSheetData() {
             try {
                 const res = await fetch(GAS_URL);
                 const data = await res.json();
                 let html = "";
                 data.forEach(item => {
+                    const textColor = item.trang_thai === "Đã chấm" ? "red" : "#888";
+                    const diemSo = item.trang_thai === "Đã chấm" ? item.diem : "⏳";
+                    
                     html += `<tr>
                         <td><b>${item.sbd}</b></td>
-                        <td style="color:red; font-weight:bold;">${item.diem}</td>
-                        <td><a href="${item.link}" target="_blank">Xem PDF</a></td>
+                        <td style="color:${textColor}; font-weight:bold; text-align:center;">${diemSo}</td>
+                        <td><a href="${item.link}" target="_blank">Mở PDF</a></td>
                     </tr>`;
                 });
-                document.getElementById('tableBody').innerHTML = html;
+                document.getElementById('tableBody').innerHTML = html || "<tr><td colspan='3' style='text-align:center;'>Chưa có dữ liệu.</td></tr>";
             } catch (e) {
-                document.getElementById('tableBody').innerHTML = "<tr><td colspan='3'>Lỗi kết nối</td></tr>";
+                document.getElementById('tableBody').innerHTML = "<tr><td colspan='3' style='color:red; text-align:center;'>Lỗi kết nối cơ sở dữ liệu.</td></tr>";
             }
         }
         
+        // Khởi động
         loadSheetData();
     </script>
 </body>
