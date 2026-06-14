@@ -8,62 +8,50 @@
         body { font-family: sans-serif; background: #eef2f3; margin: 0; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 100vh; box-sizing: border-box;}
         .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column;}
         h3 { margin-top: 0; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;}
-        textarea { flex: 1; width: 100%; padding: 10px; font-family: monospace; border: 1px solid #ccc; margin-bottom: 15px; resize: none; box-sizing: border-box; min-height: 150px;}
+        textarea { flex: 1; width: 100%; padding: 10px; font-family: monospace; border: 1px solid #ccc; margin-bottom: 15px; resize: none; box-sizing: border-box; min-height: 250px;}
         button { padding: 15px; background: #007bff; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s;}
         button:disabled { background: #999; cursor: not-allowed;}
         button:hover:not(:disabled) { background: #0056b3; }
         
         #preview { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 15px; font-size: 14px; min-height: 100px; border-radius: 5px;}
         
+        /* Cấu hình bảng dữ liệu */
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: middle; }
         th { background-color: #f2f2f2; position: sticky; top: 0;}
         .table-container { overflow-y: auto; flex: 1; border: 1px solid #ddd; border-radius: 5px;}
-
-        /* CSS Box tạo lệnh Gem */
-        .prompt-box { background: #e9ecef; padding: 12px; border-radius: 5px; margin-bottom: 20px; border: 1px dashed #adb5bd; }
-        .prompt-box label { font-size: 13px; font-weight: bold; color: #495057; margin-bottom: 8px; display: block; text-transform: uppercase;}
-        .prompt-row { display: flex; gap: 8px; align-items: stretch; }
-        .prompt-row input { width: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; text-align: center;}
-        .prompt-row code { flex: 1; background: #fff; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; display: flex; align-items: center; color: #d63384;}
-        .btn-copy { background: #28a745; width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px;}
-        .btn-copy:hover { background: #218838; }
+        
+        /* Nút copy nhỏ trong bảng */
+        .btn-copy-small { background: #28a745; color: white; border: none; border-radius: 4px; padding: 5px 8px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; width: 100%;}
+        .btn-copy-small:hover { background: #218838; }
     </style>
 </head>
 <body>
 
     <div class="panel">
-        <h3>1. Tạo lệnh & Dán JSON từ Gem</h3>
+        <h3>1. Dán JSON từ Gem</h3>
         
-        <div class="prompt-box">
-            <label>Tạo lệnh gọi file cho Gem</label>
-            <div class="prompt-row">
-                <input type="text" id="sbdPromptInput" placeholder="Nhập SBD..." oninput="updatePrompt()">
-                <code id="promptText">@Google Drive tìm và đọc file ...pdf</code>
-                <button class="btn-copy" id="copyBtn" onclick="copyPrompt()" title="Copy lệnh">📋</button>
-            </div>
-        </div>
-
         <textarea id="jsonInput" placeholder='{\n  "so_bao_danh": "123",\n  "ket_qua_cham": "...",\n  "so_diem": 8.0\n}' oninput="previewData()"></textarea>
         
         <div id="preview">Nhập JSON hợp lệ để xem trước...</div>
         <div id="status" style="margin-bottom: 10px; font-weight: bold; text-align: center; min-height: 20px;"></div>
-        <button id="btnSave" onclick="saveGrade()" disabled>LƯU KẾT QUẢ VÀO SHEET</button>
+        <button id="btnSave" onclick="saveGrade()" disabled>LƯU KẾT QUẢ VÀO CƠ SỞ DỮ LIỆU</button>
     </div>
 
     <div class="panel">
-        <h3>2. Kết quả đã chấm (Từ hệ thống cơ sở dữ liệu)</h3>
+        <h3>2. Danh sách bài thi (Từ Google Sheet)</h3>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th width="80">SBD</th>
+                        <th width="70">SBD</th>
                         <th width="60">Điểm</th>
                         <th>Bài làm</th>
+                        <th width="50" style="text-align:center;">Lệnh</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr><td colspan="3" style="text-align:center;">Đang tải dữ liệu...</td></tr>
+                    <tr><td colspan="4" style="text-align:center;">Đang tải dữ liệu...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -71,42 +59,23 @@
     </div>
 
     <script>
-        // --- THAY ĐƯỜNG LINK GAS VÀO BIẾN BÊN DƯỚI ---
         const GAS_URL = "https://script.google.com/macros/s/AKfycbz203WVeZtQU5qH1kO2vhZ5uukbWH8QpEPcPqFBOwVTn0Go1mxnfoGzXwXKyrpxBRxvpA/exec";
         let parsedJSON = null;
 
-        // --- Logic tạo lệnh Prompt ---
-        function updatePrompt() {
-            const sbd = document.getElementById('sbdPromptInput').value.trim();
-            const promptEl = document.getElementById('promptText');
-            if (sbd) {
-                promptEl.innerText = `@Google Drive tìm và đọc file ${sbd}.pdf`;
-                promptEl.style.color = "#000"; // Đổi màu khi có dữ liệu
-            } else {
-                promptEl.innerText = `@Google Drive tìm và đọc file ...pdf`;
-                promptEl.style.color = "#d63384"; 
-            }
-        }
-
-        function copyPrompt() {
-            const textToCopy = document.getElementById('promptText').innerText;
-            if (textToCopy.includes('...')) {
-                alert("Vui lòng nhập SBD trước khi copy lệnh!");
-                return;
-            }
-            
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const btn = document.getElementById('copyBtn');
+        // --- Logic tạo lệnh Prompt tại từng dòng ---
+        function copyRowPrompt(sbd, btn) {
+            const promptText = `@Google Drive tìm và đọc file ${sbd}.pdf`;
+            navigator.clipboard.writeText(promptText).then(() => {
+                const originalText = btn.innerText;
                 btn.innerText = "✅";
                 btn.style.background = "#20c997";
                 
-                // Trả lại icon cũ sau 1.5 giây
                 setTimeout(() => {
-                    btn.innerText = "📋";
+                    btn.innerText = originalText;
                     btn.style.background = "#28a745";
                 }, 1500);
             }).catch(err => {
-                alert("Không thể copy. Vui lòng copy thủ công.");
+                alert("Trình duyệt từ chối quyền copy. Vui lòng kiểm tra lại cấu hình.");
             });
         }
 
@@ -158,11 +127,9 @@
                     
                     // Reset giao diện
                     document.getElementById('jsonInput').value = "";
-                    document.getElementById('sbdPromptInput').value = "";
-                    updatePrompt();
                     document.getElementById('preview').innerHTML = "Nhập JSON hợp lệ để xem trước...";
                     
-                    // Tải lại bảng bên phải
+                    // Tải lại bảng bên phải để cập nhật trạng thái (ẩn nút copy của bài vừa chấm)
                     loadSheetData();
                 } else {
                     throw new Error(result.message);
@@ -181,18 +148,23 @@
                 const data = await res.json();
                 let html = "";
                 data.forEach(item => {
-                    const textColor = item.trang_thai === "Đã chấm" ? "red" : "#888";
-                    const diemSo = item.trang_thai === "Đã chấm" ? item.diem : "⏳";
+                    const isGraded = item.trang_thai === "Đã chấm";
+                    const textColor = isGraded ? "red" : "#888";
+                    const diemSo = isGraded ? item.diem : "⏳";
+                    
+                    // Cột Lệnh: Nếu đã chấm thì để trống, chưa chấm thì hiện nút copy
+                    const actionHtml = isGraded ? "" : `<button class="btn-copy-small" onclick="copyRowPrompt('${item.sbd}', this)" title="Copy lệnh cho SBD ${item.sbd}">📋</button>`;
                     
                     html += `<tr>
                         <td><b>${item.sbd}</b></td>
                         <td style="color:${textColor}; font-weight:bold; text-align:center;">${diemSo}</td>
                         <td><a href="${item.link}" target="_blank">Mở PDF</a></td>
+                        <td style="text-align:center; padding:4px;">${actionHtml}</td>
                     </tr>`;
                 });
-                document.getElementById('tableBody').innerHTML = html || "<tr><td colspan='3' style='text-align:center;'>Chưa có dữ liệu.</td></tr>";
+                document.getElementById('tableBody').innerHTML = html || "<tr><td colspan='4' style='text-align:center;'>Chưa có dữ liệu.</td></tr>";
             } catch (e) {
-                document.getElementById('tableBody').innerHTML = "<tr><td colspan='3' style='color:red; text-align:center;'>Lỗi kết nối cơ sở dữ liệu.</td></tr>";
+                document.getElementById('tableBody').innerHTML = "<tr><td colspan='4' style='color:red; text-align:center;'>Lỗi kết nối cơ sở dữ liệu.</td></tr>";
             }
         }
         
