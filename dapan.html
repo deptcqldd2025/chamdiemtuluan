@@ -10,6 +10,12 @@
         h1 { text-align: center; color: #0056b3; margin-top: 0; border-bottom: 2px solid #0056b3; padding-bottom: 15px;}
         h2 { color: #d9534f; margin-top: 30px; border-left: 4px solid #d9534f; padding-left: 10px; background: #fdf2f2; padding-top: 5px; padding-bottom: 5px;}
         
+        /* Bộ lọc Mã đề */
+        .filter-section { text-align: center; margin: 20px 0; background: #e9ecef; padding: 15px; border-radius: 8px; border: 1px solid #ced4da;}
+        select { padding: 10px 15px; font-size: 16px; border-radius: 5px; border: 2px solid #0056b3; outline: none; cursor: pointer; min-width: 250px; font-weight: bold; color: #0056b3;}
+        .hidden { display: none !important; }
+        
+        /* Giao diện Accordion */
         details { margin-bottom: 12px; border: 1px solid #ced4da; border-radius: 5px; overflow: hidden; background: #f8f9fa; transition: all 0.3s ease;}
         summary { padding: 15px; font-weight: bold; font-size: 15px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; color: #212529;}
         summary::-webkit-details-marker { display: none; }
@@ -28,6 +34,9 @@
         .note-box { background: #fff3cd; border: 1px solid #ffeeba; border-radius: 5px; padding: 15px; margin-top: 30px; }
         .note-box h4 { margin-top: 0; color: #856404; }
         .note-box ul { margin-bottom: 0; padding-left: 20px; color: #856404;}
+        
+        /* Cảnh báo khi đề trống */
+        #emptyMessage { text-align: center; color: red; font-weight: bold; padding: 20px; display: none; border: 1px dashed red; margin-top: 20px; border-radius: 5px;}
     </style>
 </head>
 <body>
@@ -35,9 +44,18 @@
 <div class="container">
     <h1>CÂU HỎI TỰ LUẬN KIỂM TRA AN TOÀN ĐIỆN</h1>
 
-    <h2>A. 10 CÂU HỎI LÝ THUYẾT NỀN TẢNG</h2>
+    <div class="filter-section">
+        <label for="maDeSelect" style="font-weight: bold; margin-right: 15px; font-size: 16px;">🔍 TÌM KIẾM THEO ĐỀ:</label>
+        <select id="maDeSelect" onchange="filterMaDe()">
+            <option value="all">-- Hiển thị Toàn bộ Ngân hàng câu hỏi --</option>
+            </select>
+    </div>
 
-    <details>
+    <div id="emptyMessage">⚠ Mã đề này hiện chưa có dữ liệu trong hệ thống!</div>
+
+    <h2>A. CÂU HỎI LÝ THUYẾT NỀN TẢNG</h2>
+
+    <details data-code="1">
         <summary>Câu 1: Người lao động có quyền từ chối thực hiện công việc trong trường hợp nào? Thủ tục báo cáo ra sao? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -48,7 +66,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="2">
         <summary>Câu 2: Hãy nêu trình tự các biện pháp kỹ thuật chuẩn bị nơi làm việc có cắt điện. (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -61,7 +79,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="3">
         <summary>Câu 3: Những trường hợp nào bắt buộc phải cử Người giám sát an toàn điện (Người GSATĐ) riêng cho Đơn vị công tác? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -74,7 +92,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="4">
         <summary>Câu 4: Yêu cầu về tiết diện dây nối đất ngắn mạch và dây nối đất cảm ứng là bao nhiêu? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -90,7 +108,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="5">
         <summary>Câu 5: Khi làm việc gần phần có điện trên 01 kV, khoảng cách an toàn tối thiểu khi không có rào chắn đối với cấp điện áp 22 kV và 220 kV là bao nhiêu? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -101,7 +119,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="6">
         <summary>Câu 6: Trình tự thao tác đặt nối đất di động trên lưới trên 01 kV được thực hiện như thế nào? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -114,7 +132,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="7">
         <summary>Câu 7: Những loại công việc nào bắt buộc phải thực hiện theo Phiếu công tác (PCT)? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -127,7 +145,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="8">
         <summary>Câu 8: Khi làm việc trên ĐDK đã cắt điện nhưng đi chung cột với ĐDK đang vận hành, yêu cầu về khoảng cách nhỏ nhất giữa các dây dẫn gần nhất đối với cấp điện áp 22 kV và 110 kV là bao nhiêu? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -138,7 +156,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="9">
         <summary>Câu 9: Cần thực hiện các biện pháp gì để ngăn chặn đóng điện nhầm khi có công tác cắt điện? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -151,7 +169,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="10">
         <summary>Câu 10: Hình thức sửa chữa nóng (hotline, điện áp trên 01 kV đến 35 kV) được áp dụng với điều kiện gì? (7 điểm)</summary>
         <div class="answer">
             <ul>
@@ -169,9 +187,9 @@
         </div>
     </details>
 
-    <h2>B. 10 CÂU HỎI TÌNH HUỐNG (Nhận diện rủi ro)</h2>
+    <h2>B. CÂU HỎI TÌNH HUỐNG (Nhận diện rủi ro)</h2>
 
-    <details>
+    <details data-code="1">
         <summary>Tình huống 1: Kéo dây trên ĐDK 22 kV đã cắt điện, dây cũ vướng cây nguy cơ chạm 110 kV phía trên. Xử lý thế nào? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -185,7 +203,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="2">
         <summary>Tình huống 2: Trèo ghi chỉ số công tơ hạ áp, thấy dây thông tin quấn quanh thùng nghi rò điện. Xử lý thế nào? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -197,7 +215,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="3">
         <summary>Tình huống 3: Thí nghiệm cáp 22 kV, cần tháo nối đất hai đầu. Biện pháp an toàn bắt buộc là gì? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -211,7 +229,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="4">
         <summary>Tình huống 4: Cột chung ĐDK 22 kV (đã cắt điện) và 0,4 kV (có điện). Yêu cầu an toàn khi trèo? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -225,7 +243,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="5">
         <summary>Tình huống 5: Đang đặt nối đất di động trạm 110 kV thì mưa to kèm giông sét. Xử lý thế nào? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -238,7 +256,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="6">
         <summary>Tình huống 6: Đang sửa ĐDK 22 kV có nối đất 2 đầu. Cần di chuyển vị trí nối đất. Ai quyết định và thực hiện? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -250,7 +268,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="7">
         <summary>Tình huống 7: Cần trục cách dây 220 kV có 3,5m. Có được thi công không? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -262,7 +280,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="8">
         <summary>Tình huống 8: Dây 110 kV đứt rơi xuống đất, còn quấn vào cột, có người qua lại. Xử lý khẩn cấp? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -274,7 +292,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="9">
         <summary>Tình huống 9: Sửa chữa nóng (hotline) ĐDK 22 kV khi gió cấp 5 và sương mù nhẹ. Được phép không? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -286,7 +304,7 @@
         </div>
     </details>
 
-    <details>
+    <details data-code="10">
         <summary>Tình huống 10: Leo cột ĐDK 22 kV (đã cắt điện, nối đất), phát hiện tổ ong lớn tại vị trí thao tác. Làm sao an toàn? (3 điểm)</summary>
         <div class="answer">
             <ul>
@@ -301,11 +319,54 @@
     <div class="note-box">
         <h4>* GHI CHÚ ĐÁNH GIÁ</h4>
         <ul>
-            <li>Có 10 mã đề, mỗi mã đề gồm 2 câu: 1 câu kiến thức chung và 1 câu tình huống.</li>
+            <li>Hệ thống hỗ trợ tra cứu tự động. Nếu bạn chọn Mã đề từ 11 đến 20 mà chưa có dữ liệu, hệ thống sẽ báo cảnh báo.</li>
             <li>Trọng số điểm chấm: Câu kiến thức chung (7 điểm), Câu tình huống (3 điểm). Tổng 10 điểm.</li>
         </ul>
     </div>
 </div>
+
+<script>
+    // Tự động sinh danh sách Mã đề từ 1 đến 20
+    const select = document.getElementById('maDeSelect');
+    for (let i = 1; i <= 20; i++) {
+        let opt = document.createElement('option');
+        opt.value = i;
+        opt.innerHTML = "Mã đề số " + i;
+        select.appendChild(opt);
+    }
+
+    // Logic lọc và thu gọn/mở rộng thẻ
+    function filterMaDe() {
+        const val = select.value;
+        const allDetails = document.querySelectorAll('details[data-code]');
+        const emptyMessage = document.getElementById('emptyMessage');
+        let hasData = false;
+        
+        allDetails.forEach(detail => {
+            if (val === 'all') {
+                detail.classList.remove('hidden');
+                detail.removeAttribute('open'); // Đóng tất cả lại cho gọn khi xem toàn bộ
+                hasData = true;
+            } else {
+                if (detail.getAttribute('data-code') === val) {
+                    detail.classList.remove('hidden');
+                    detail.setAttribute('open', 'true'); // Tự động bung ra để đọc ngay
+                    hasData = true;
+                } else {
+                    detail.classList.add('hidden');
+                    detail.removeAttribute('open');
+                }
+            }
+        });
+
+        // Hiển thị cảnh báo nếu mã đề (ví dụ 11-20) chưa được nhập dữ liệu vào HTML
+        if (!hasData && val !== 'all') {
+            emptyMessage.style.display = 'block';
+        } else {
+            emptyMessage.style.display = 'none';
+        }
+    }
+</script>
 
 </body>
 </html>
